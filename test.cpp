@@ -1,14 +1,19 @@
 class Y {  
-public: void doSomething();  
+public: void doMaths();
+public: void printHelloWorld();  
 };
 
-void z() { Y y; y.doSomething(); }
+void z() { Y y; y.doMaths(); }
 
-int doSomething(int i) {  
+int doMaths(int i) {  
     if (i == 0) return 0;
-    return 1 + doSomething(i--);
+    return 1 + doMaths(i--);
 }
 
-int main() {  
-    return doSomething(2);
+void printHelloWorld() {
+}
+
+int main() { 
+	printHelloWorld(); 
+    return doMaths(2);
 }
