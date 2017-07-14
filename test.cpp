@@ -10,10 +10,12 @@ int doMaths(int i) {
     return 1 + doMaths(i--);
 }
 
-void printHelloWorld() {
-}
+void printHelloWorld() { }
+
+void unusedFunc() { }
 
 int main() { 
-	printHelloWorld(); 
+	printHelloWorld();
+	unusedFunc(); 
     return doMaths(2);
 }

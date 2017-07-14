@@ -1,59 +1,33 @@
-#include "clang/ASTMatchers/ASTMatchFinder.h"
-#include "clang/ASTMatchers/ASTMatchers.h"
-#include "clang/AST/DeclarationName.h"
-#include "clang/Frontend/FrontendActions.h"
-#include "clang/Tooling/CommonOptionsParser.h"
-#include "clang/Tooling/Tooling.h"
-#include "llvm/Support/CommandLine.h"
+//
+//  FAIC.cpp
+//  Function Analysis In Codebases
+//
+//  Created by Tiago Ferreira on 12/06/2017.
+//  Copyright 2017 Tiago Ferreira
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+//  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+//  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
 
-using namespace clang::ast_matchers;
-using namespace clang::tooling;
-using namespace clang;
-using namespace llvm;
+#include "FSManager.cpp"
+#include "FunctionParser.cpp"
 
-class MyPrinter : public MatchFinder::MatchCallback {
- public:
-  virtual void run(const MatchFinder::MatchResult &Result) {
-    ASTContext *Context = Result.Context;
-	SourceManager *SManager = Result.SourceManager;
-    if (const CallExpr *E =
-            Result.Nodes.getNodeAs<clang::CallExpr>("functions")) {
-      FullSourceLoc FullLocation = Context->getFullLoc(E->getLocStart());
-      if (FullLocation.isValid()) {
-		StringRef filename = SManager->getFilename(FullLocation);
-		std::string functionName = E->getDirectCallee()->getNameAsString();
-        llvm::outs() << "Found call " << functionName << " at " << FullLocation.getSpellingLineNumber()
-                     << ":" << FullLocation.getSpellingColumnNumber()
-					 << " in file " << filename << "\n";
-      }
-    }
-  }
-};
+// TODO: Ignore missing include paths.
 
-// Apply a custom category to all command-line options so that they are the
-// only ones displayed.
-static llvm::cl::OptionCategory FAICCategory("FAIC Options");
+using namespace std;
+using namespace FileSystem;
+using namespace FuncParser;
 
-// CommonOptionsParser declares HelpMessage with a description of the common
-// command-line options related to the compilation database and input files.
-// It's nice to have this help message in all tools.
-static cl::extrahelp FAICHelp(CommonOptionsParser::HelpMessage);
+int main(int argc, char const *argv[]) {
+    vector<string> files;
+    getFilesFromPath(argv[1], files);
 
-// A help message for this specific tool can be added afterwards.
-static cl::extrahelp MoreHelp("\nMore help text...");
+    vector<string> functionDecls;
+    getFuncDecls(files, functionDecls);
 
-int main(int argc, const char **argv) {
-  CommonOptionsParser OptionsParser(argc, argv, FAICCategory);
-  ClangTool Tool(OptionsParser.getCompilations(),
-                 OptionsParser.getSourcePathList());
-
-  MyPrinter Printer;
-  MatchFinder Finder;
-
-  StatementMatcher functionMatcher =
-      callExpr(callee(functionDecl())).bind("functions");
-
-  Finder.addMatcher(functionMatcher, &Printer);
-
-  return Tool.run(newFrontendActionFactory(&Finder).get());
+    return 0;
 }
