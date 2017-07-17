@@ -42,38 +42,38 @@ using std::string;
 
 namespace FileSystem {
 
-	void getFilesFromPath(path rootPath, vector<string> &filesVector, const int depth = 0) {
-		path p(current_path());
-		p = system_complete(rootPath);
+    void getFilesFromPath(path rootPath, vector<string> &filesVector, const int depth = 0) {
+        path p(current_path());
+        p = system_complete(rootPath);
 
-		try {
-			if (!exists(p)) {
-				warnOnce << "Invalid path: " << p
-				<< "\nFile not found, make sure the file or directory exists." << endl;
-		    } else {
-				if (!is_directory(p)) {
+        try {
+            if (!exists(p)) {
+                warnOnce << "Invalid path: " << p
+                << "\nFile not found, make sure the file or directory exists." << endl;
+            } else {
+                if (!is_directory(p)) {
 
-					if (p.extension().string() == ".cpp") {
-						filesVector.push_back(p.string());
-					} else {
-						warnOnce << "Invalid path: " << p
-						<< "\nMust be a C++ file (.cpp extensions only)." << endl;
-					}
-				} else {
-					if (boost::filesystem::is_empty(p)) {
-						warnOnce << "Invalid path: " << p
-						<< "\nThe directory is empty, no files to anaylse." << endl;
-					} else {
-						for (auto&& file : directory_iterator(p)) {
-							if (!starts_with(file.path().filename().string(), ".")) {
-								getFilesFromPath(system_complete(file.path()).string(), filesVector, depth+1);
-							}
-						}
-					}
-				}
-			}
-		} catch (const filesystem_error& ex) {
-			cerr << ex.what() << endl;
-		}
-	}
+                    if (p.extension().string() == ".cpp") {
+                        filesVector.push_back(p.string());
+                    } else {
+                        warnOnce << "Invalid path: " << p
+                        << "\nMust be a C++ file (.cpp extensions only)." << endl;
+                    }
+                } else {
+                    if (boost::filesystem::is_empty(p)) {
+                        warnOnce << "Invalid path: " << p
+                        << "\nThe directory is empty, no files to anaylse." << endl;
+                    } else {
+                        for (auto&& file : directory_iterator(p)) {
+                            if (!starts_with(file.path().filename().string(), ".")) {
+                                getFilesFromPath(system_complete(file.path()).string(), filesVector, depth+1);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (const filesystem_error& ex) {
+            cerr << ex.what() << endl;
+        }
+    }
 }

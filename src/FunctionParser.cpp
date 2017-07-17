@@ -56,11 +56,12 @@ namespace FuncParser {
                 if (FullLocation.isValid()) {
                     StringRef filename = SManager->getFilename(FullLocation);
                     std::string functionName = E->getDirectCallee()->getNameAsString();
-
-                    llvm::outs() << "Found call " << functionName
-                    << " at " << FullLocation.getSpellingLineNumber()
-                    << ":" << FullLocation.getSpellingColumnNumber()
-                    << " in file " << filename << "\n";
+                    if (functionName.find("operator")) {
+                        llvm::outs() << "Found call " << functionName
+                        << " at " << FullLocation.getSpellingLineNumber()
+                        << ":" << FullLocation.getSpellingColumnNumber()
+                        << " in file " << filename << "\n";
+                    }
                 }
             }
         }
@@ -69,7 +70,7 @@ namespace FuncParser {
     class : public DiagnosticConsumer {
     public:
         virtual bool IncludeInDiagnosticCounts() const {
-            return false; // Enough of that "not-so-fatal error" garbage.
+            return false; // Enough of that "not-so-fatal" error garbage.
         }
     } diagConsumer;
 
@@ -97,7 +98,7 @@ namespace FuncParser {
         MatchFinder Finder;
 
         StatementMatcher functionMatcher = callExpr(
-            callee(functionDecl(unless(hasOverloadedOperatorName("=")))),
+            callee(functionDecl()),
             unless(isExpansionInSystemHeader())
         ).bind("functions");
 
