@@ -66,6 +66,14 @@ namespace FuncParser {
         }
     };
 
+    class : public DiagnosticConsumer {
+    public:
+        virtual bool IncludeInDiagnosticCounts() const {
+            return false; // Enough of that "not-so-fatal error" garbage.
+        }
+    } diagConsumer;
+
+
     void getFuncDecls(vector<string> &files, vector<string> &functionDecls) {
         std::stringstream filesStringStream; // Synthesise CLI entry from files vector.
         filesStringStream << "FAIC ";
@@ -88,8 +96,13 @@ namespace FuncParser {
         FuncParser::MyPrinter Printer;
         MatchFinder Finder;
 
-        StatementMatcher functionMatcher = callExpr(callee(functionDecl()), unless(isExpansionInSystemHeader())).bind("functions");
+        StatementMatcher functionMatcher = callExpr(
+            callee(functionDecl(unless(hasOverloadedOperatorName("=")))),
+            unless(isExpansionInSystemHeader())
+        ).bind("functions");
+
         Finder.addMatcher(functionMatcher, &Printer);
+        Tool.setDiagnosticConsumer(&diagConsumer);
         Tool.run(newFrontendActionFactory(&Finder).get());
     }
 }
