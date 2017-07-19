@@ -16,18 +16,14 @@
 #include "FSManager.cpp"
 #include "FunctionParser.cpp"
 
-// TODO: Ignore missing include paths.
-
 using namespace std;
 using namespace FileSystem;
 using namespace FuncParser;
 
+std::vector<FuncParser::Function> functions;
+std::vector<string> files;
+
 int main(int argc, char const *argv[]) {
-    vector<string> files;
     getFilesFromPath(argv[1], files);
-
-    vector<string> functionDecls;
-    getFuncDecls(files, functionDecls);
-
-    return 0;
+    getFunctions(Declaration, files);
 }

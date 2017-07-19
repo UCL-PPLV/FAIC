@@ -32,8 +32,11 @@ using std::vector;
 
 namespace FuncParser {
 
+    enum MatcherType { Declaration, Call };
+
     struct Function {
-        string name;
+        string identifier;
+        string hexID;
         string declFile;
         int numberOfCalls;
         vector<string> callers;
@@ -44,13 +47,36 @@ namespace FuncParser {
     static cl::extrahelp FAICHelp(CommonOptionsParser::HelpMessage);
     static cl::extrahelp MoreHelp("\nMore help text...");
 
-    class MyPrinter : public MatchFinder::MatchCallback {
+    class DeclFilter : public MatchFinder::MatchCallback {
         public: virtual void run(const MatchFinder::MatchResult &Result) {
 
             ASTContext *Context = Result.Context;
             SourceManager *SManager = Result.SourceManager;
 
-            if (const CallExpr *E = Result.Nodes.getNodeAs<clang::CallExpr>("functions")) {
+            if (const FunctionDecl *E = Result.Nodes.getNodeAs<clang::FunctionDecl>("functionDecls")) {
+                FullSourceLoc FullLocation = Context->getFullLoc(E->getLocStart());
+
+                if (FullLocation.isValid()) {
+                    StringRef filename = SManager->getFilename(FullLocation);
+                    std::string functionName = E->getNameAsString();
+                    if (functionName.find("operator")) {
+                        llvm::outs() << "Found decl " << functionName
+                        << " at " << FullLocation.getSpellingLineNumber()
+                        << ":" << FullLocation.getSpellingColumnNumber()
+                        << " in file " << filename << "\n";
+                    }
+                }
+            }
+        }
+    };
+
+    class CallFilter : public MatchFinder::MatchCallback {
+        public: virtual void run(const MatchFinder::MatchResult &Result) {
+
+            ASTContext *Context = Result.Context;
+            SourceManager *SManager = Result.SourceManager;
+
+            if (const CallExpr *E = Result.Nodes.getNodeAs<clang::CallExpr>("functionCalls")) {
                 FullSourceLoc FullLocation = Context->getFullLoc(E->getLocStart());
 
                 if (FullLocation.isValid()) {
@@ -75,7 +101,7 @@ namespace FuncParser {
     } diagConsumer;
 
 
-    void getFuncDecls(vector<string> &files, vector<string> &functionDecls) {
+    void getFunctions(MatcherType matcher, vector<string> &files) {
         std::stringstream filesStringStream; // Synthesise CLI entry from files vector.
         filesStringStream << "FAIC ";
         for(size_t i = 0; i < files.size(); ++i) {
@@ -94,15 +120,21 @@ namespace FuncParser {
         CommonOptionsParser OptionsParser(filesArgc, filesArgv, FAICCategory); // Setup parser from string to autogenerate CompilationsDatabse
         ClangTool Tool(OptionsParser.getCompilations(), OptionsParser.getSourcePathList());
 
-        FuncParser::MyPrinter Printer;
         MatchFinder Finder;
 
-        StatementMatcher functionMatcher = callExpr(
-            callee(functionDecl()),
-            unless(isExpansionInSystemHeader())
-        ).bind("functions");
+        if (matcher == Declaration) {
+            FuncParser::DeclFilter Filter;
+            DeclarationMatcher functionMatcher = functionDecl(unless(isExpansionInSystemHeader())).bind("functionDecls");
+            Finder.addMatcher(functionMatcher, &Filter);
+        } else {
+            FuncParser::CallFilter Filter;
+            StatementMatcher functionMatcher = callExpr(
+                callee(functionDecl()),
+                unless(isExpansionInSystemHeader())
+            ).bind("functionCalls");
+            Finder.addMatcher(functionMatcher, &Filter);
+        }
 
-        Finder.addMatcher(functionMatcher, &Printer);
         Tool.setDiagnosticConsumer(&diagConsumer);
         Tool.run(newFrontendActionFactory(&Finder).get());
     }
