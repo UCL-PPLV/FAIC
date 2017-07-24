@@ -1,3 +1,4 @@
 -I.
+-I./include
 -I/usr/local/include
 -I/usr/local/Cellar/llvm/4.0.1/include

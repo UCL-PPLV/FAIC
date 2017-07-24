@@ -1,11 +1,28 @@
-LLVMDIR := /usr/local/Cellar/llvm/4.0.1
-CFLAGS := $(shell $(LLVMDIR)/bin/llvm-config --cxxflags && $(LLVMDIR)/bin/llvm-config --ldflags --libs --system-libs) -lclangAST -lclangASTMatchers -lclangAnalysis -lclangBasic -lclangDriver -lclangEdit -lclangFrontend -lclangFrontendTool -lclangLex -lclangParse -lclangSema -lclangEdit -lclangRewrite -lclangRewriteFrontend -lclangStaticAnalyzerFrontend -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangSerialization -lclangToolingCore -lclangTooling -lclangFormat -lboost_filesystem
+OBJDIR := obj
+BINDIR := bin
+OBJS := $(addprefix $(OBJDIR)/,FAIC.o FSManager.o FunctionParser.o StringToArgVC.o)
+BINS := $(addprefix $(BINDIR)/,FAIC)
 
-all: src/FAIC.cpp src/FSManager.cpp src/FunctionParser.cpp src/StringToArgVC.cpp
-	clang++ $< $(CFLAGS) -o FAIC
+LLVMDIR := /usr/local/Cellar/llvm/4.0.1
+CFLAGS := -std=c++11 -I./include -I/usr/local/Cellar/llvm/4.0.1/include
+LLVMFLAGS := $(shell $(LLVMDIR)/bin/llvm-config --cxxflags && $(LLVMDIR)/bin/llvm-config --ldflags --libs --system-libs) -I./include -lclangAST -lclangASTMatchers -lclangAnalysis -lclangBasic -lclangDriver -lclangEdit -lclangFrontend -lclangFrontendTool -lclangLex -lclangParse -lclangSema -lclangEdit -lclangRewrite -lclangRewriteFrontend -lclangStaticAnalyzerFrontend -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangSerialization -lclangToolingCore -lclangTooling -lclangFormat -lboost_filesystem
+
+all: $(BINS)
+
+$(OBJDIR)/%.o: src/%.cpp | $(OBJDIR)
+	clang++ $< $(CFLAGS)  -c -o $@
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+bin/FAIC: $(OBJS) | $(BINDIR)
+	clang++ $(LLVMFLAGS) $(OBJS) -o bin/FAIC
+
+$(BINDIR):
+	mkdir -p $(BINDIR)
 
 test:
-	./FAIC tests/test.cpp
+	./bin/FAIC tests/test.cpp
 
 clean:
-	rm -rf FAIC FAIC.dSYM
+	rm -rf FAIC obj bin out

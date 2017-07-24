@@ -2,7 +2,7 @@
 //  FAIC.cpp
 //  Function Analysis In Codebases
 //
-//  Created by Tiago Ferreira on 12/06/2017.
+//  Created by Tiago Ferreira on 12/07/2017.
 //  Copyright 2017 Tiago Ferreira
 //
 //  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -13,17 +13,11 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "FSManager.cpp"
-#include "FunctionParser.cpp"
-
-using namespace std;
-using namespace FileSystem;
-using namespace FuncParser;
-
-std::vector<FuncParser::Function> functions;
-std::vector<string> files;
+#include "FAIC.hpp"
 
 int main(int argc, char const *argv[]) {
-    getFilesFromPath(argv[1], files);
-    getFunctions(Declaration, files);
+    int depth = 0;
+    getFilesFromPath(argv[1], depth);
+    // getFunctions(declarations);
+    getFunctions(calls);
 }

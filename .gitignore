@@ -1,4 +1,6 @@
-FAIC
+bin
+obj
+out
 
 # Prerequisites
 *.d

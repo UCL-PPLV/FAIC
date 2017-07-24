@@ -22,21 +22,15 @@
 
 */
 
+#include <stdexcept>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
+#include <cstdlib>
+#include <cstring>
 #include <vector>
 #include <string>
 
-#include <cstdlib>
-#include <cstring>
-
-bool _isQuote(char c);
-bool _isEscape(char c);
-bool _isEscape(char c);
-bool _isWhitespace(char c);
-std::vector<std::string> parse(const std::string& args);
-void stringToArgcArgv(const std::string& str, int* argc, char*** argv);
+#include "FAIC.hpp"
 
 /*
  * Usage:
