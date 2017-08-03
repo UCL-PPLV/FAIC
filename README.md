@@ -11,3 +11,5 @@ Tiago Ferreira | <a href="https://twitter.com/tiferrei2000/">Twitter</a> | <a hr
 ### License
 
 FAIC Copyright (C) 2017 Tiago Ferreira
+
+Please check the <a href="https://github.com/tiferrei/FAIC/blob/master/LICENSE">license file</a> embed in this project for more details.
