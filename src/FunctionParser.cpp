@@ -20,6 +20,7 @@
 #include "clang/AST/DeclarationName.h"
 #include "llvm/Support/CommandLine.h"
 #include "clang/Tooling/Tooling.h"
+#include "clang/AST/DeclBase.h"
 #include "FAIC.hpp"
 #include <sstream>
 
@@ -41,12 +42,21 @@ void DeclFilter::run(const MatchFinder::MatchResult &Result) {
         if (FullLocation.isValid()) {
             StringRef filename = SManager->getFilename(FullLocation);
             std::string functionName = E->getNameAsString();
-            if (functionName.find("operator")) {
-                for(std::size_t i = 0; i < functions.size(); ++i) {
-                    Function newFunc;
-                    newFunc.identifier = functionName;
-                    newFunc.declFile = filename;
-                    functions.push_back(newFunc);
+            int functionID = E->getGlobalID(); // FIXME: Seems to always return 0.
+            if (isCPPFile(filename)) {
+                if (!E->isOverloadedOperator() && functionName.find("~")) { // Ignore operator overloaders and destructors
+                    bool functionIsPresent = false;
+                    for(std::size_t i = 0; i < functions.size(); ++i) {
+                        if (functions[i].identifier == functionName) {
+                            functionIsPresent = true;
+                        }
+                    }
+                    if (!functionIsPresent) {
+                        Function newFunc;
+                        newFunc.identifier = functionName;
+                        newFunc.declFile = filename;
+                        functions.push_back(newFunc);
+                    }
                 }
             }
         }
@@ -58,20 +68,24 @@ void CallFilter::run(const MatchFinder::MatchResult &Result) {
     ASTContext *Context = Result.Context;
     SourceManager *SManager = Result.SourceManager;
 
-    if (const CallExpr *E = Result.Nodes.getNodeAs<clang::CallExpr>("functionCalls")) {
-        FullSourceLoc FullLocation = Context->getFullLoc(E->getLocStart());
+    auto callee = Result.Nodes.getNodeAs<clang::CallExpr>("functionCalls");
+	auto caller = Result.Nodes.getNodeAs<clang::FunctionDecl>("functionCallers");
 
-        if (FullLocation.isValid()) {
-            StringRef filename = SManager->getFilename(FullLocation);
-            std::string functionName = E->getDirectCallee()->getNameAsString();
-            if (functionName.find("operator")) {
-                llvm::outs() << "Found call " << functionName
-                << " at " << FullLocation.getSpellingLineNumber()
-                << ":" << FullLocation.getSpellingColumnNumber()
-                << " in file " << filename << "\n";
-            }
-        }
-    }
+	FullSourceLoc FullLocation = Context->getFullLoc(callee->getLocStart());
+	if (FullLocation.isValid()) {
+		StringRef filename = SManager->getFilename(FullLocation);
+		std::string functionName = callee->getDirectCallee()->getNameAsString();
+		if (isCPPFile(filename)) {
+			if ( !callee->getDirectCallee()->isOverloadedOperator() && functionName.find("~")) { // Ignore operator overloaders and destructors
+				for (std::size_t i = 0; i < functions.size(); ++i) {
+					if (functions[i].identifier == functionName) {
+						vector<string> callerWithFile = {filename, caller->getNameAsString()};
+						functions[i].callers.push_back(callerWithFile);
+					}
+				}
+			}
+		}
+	}
 }
 
 class : public DiagnosticConsumer {
@@ -104,17 +118,31 @@ void getFunctions(MatcherType matcher) {
 
     if (matcher == declarations) {
         DeclFilter Filter;
-        StatementMatcher functionMatcher = declRefExpr(to(functionDecl())).bind("functionDecls");
+        DeclarationMatcher functionMatcher = functionDecl(isDefinition(), unless(isExpansionInSystemHeader())).bind("functionDecls");
         Finder.addMatcher(functionMatcher, &Filter);
     } else {
         CallFilter Filter;
         StatementMatcher functionMatcher = callExpr(
             callee(functionDecl()),
-            unless(isExpansionInSystemHeader())
+			hasAncestor(functionDecl().bind("functionCallers")),
+            isExpansionInMainFile(),
+			unless(isExpansionInSystemHeader())
         ).bind("functionCalls");
         Finder.addMatcher(functionMatcher, &Filter);
     }
 
     Tool.setDiagnosticConsumer(&diagConsumer);
     Tool.run(newFrontendActionFactory(&Finder).get());
+}
+
+void printFunctions() {
+	for (size_t i = 0; i < functions.size(); ++i) {
+		llvm::outs() << "Showing information for function Index " << i << "\n"
+		<< "	Name: " << functions[i].identifier << "\n"
+		<< "	Declaration File: " << functions[i].declFile << "\n";
+		for (size_t x = 0; x < functions[i].callers.size(); ++x) {
+			llvm::outs() << "	Called by function " << functions[i].callers[x][1]
+			<< " in file " << functions[i].callers[x][0] << "\n";
+		}
+	}
 }

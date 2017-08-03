@@ -22,9 +22,14 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
+// MARK: Debug
+
+void printFunctions();
+
 // MARK: FSManager
 
 extern std::vector<std::string> files;
+bool isCPPFile(std::string filePath);
 void getFilesFromPath(std::string rootPath, int &depth);
 
 // MARK: FunctionParser
@@ -45,9 +50,7 @@ struct Function {
        std::string identifier;
        std::string hexID;
        std::string declFile;
-       int numberOfCalls;
-       std::vector<std::string> callers;
-       std::vector<std::string> callersFile;
+       std::vector< std::vector<std::string> > callers;
 };
 
 extern std::vector<Function> functions;

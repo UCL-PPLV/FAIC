@@ -15,9 +15,10 @@
 
 #include "FAIC.hpp"
 
-int main(int argc, char const *argv[]) {
+int main(int, char const *argv[]) {
     int depth = 0;
     getFilesFromPath(argv[1], depth);
-    // getFunctions(declarations);
+    getFunctions(declarations);
     getFunctions(calls);
+	printFunctions();
 }

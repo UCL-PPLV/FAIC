@@ -38,6 +38,16 @@ using namespace std;
 
 vector<string> files;
 
+bool isCPPFile(string filePath) {
+    path p(current_path());
+    p = system_complete(filePath);
+    if (p.extension().string() == ".cpp") {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void getFilesFromPath(string rootPath, int &depth) {
     path p(current_path());
     p = system_complete(rootPath);
@@ -48,8 +58,7 @@ void getFilesFromPath(string rootPath, int &depth) {
             << "\nFile not found, make sure the file or directory exists." << endl;
         } else {
             if (!is_directory(p)) {
-
-                if (p.extension().string() == ".cpp") {
+                if (isCPPFile(p.filename().string())) {
                     files.push_back(p.string());
                 } else {
                     warnOnce << "Invalid path: " << p

@@ -3,6 +3,8 @@ public: void doMaths();
 public: void printHelloWorld();  
 };
 
+class RandomClassHere {}; 
+
 void z() { Y y; y.doMaths(); }
 
 int doMaths(int i) {  
