@@ -47,15 +47,20 @@ class CallFilter : public clang::ast_matchers::MatchFinder::MatchCallback {
 };
 
 struct Function {
-       std::string identifier;
-       std::string hexID;
-       std::string declFile;
-       std::vector< std::vector<std::string> > callers;
+	std::string identifier;
+	std::string declFile;
+	std::vector<Function> callers;
+
+	bool operator == (const Function& other) const {
+		return std::tie(this->identifier, this->declFile, this->callers) == std::tie(other.identifier, other.declFile, other.callers);
+	}
 };
 
 extern std::vector<Function> functions;
 enum MatcherType { declarations, calls };
+
 void getFunctions(MatcherType matcher);
+void removeDuplicates();
 
 // MARK: StringToArgVC
 

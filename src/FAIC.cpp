@@ -20,5 +20,6 @@ int main(int, char const *argv[]) {
     getFilesFromPath(argv[1], depth);
     getFunctions(declarations);
     getFunctions(calls);
+	removeDuplicates();
 	printFunctions();
 }

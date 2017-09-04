@@ -42,7 +42,6 @@ void DeclFilter::run(const MatchFinder::MatchResult &Result) {
         if (FullLocation.isValid()) {
             StringRef filename = SManager->getFilename(FullLocation);
             std::string functionName = E->getNameAsString();
-            int functionID = E->getGlobalID(); // FIXME: Seems to always return 0.
             if (isCPPFile(filename)) {
                 if (!E->isOverloadedOperator() && functionName.find("~")) { // Ignore operator overloaders and destructors
                     bool functionIsPresent = false;
@@ -75,12 +74,13 @@ void CallFilter::run(const MatchFinder::MatchResult &Result) {
 	if (FullLocation.isValid()) {
 		StringRef filename = SManager->getFilename(FullLocation);
 		std::string functionName = callee->getDirectCallee()->getNameAsString();
-		if (isCPPFile(filename)) {
-			if ( !callee->getDirectCallee()->isOverloadedOperator() && functionName.find("~")) { // Ignore operator overloaders and destructors
-				for (std::size_t i = 0; i < functions.size(); ++i) {
-					if (functions[i].identifier == functionName) {
-						vector<string> callerWithFile = {filename, caller->getNameAsString()};
-						functions[i].callers.push_back(callerWithFile);
+		if (isCPPFile(filename) && !callee->getDirectCallee()->isOverloadedOperator() && functionName.find("~")) {
+			for (std::size_t i = 0; i < functions.size(); ++i) {
+				if (functions[i].identifier == functionName) {
+					for (size_t x = 0; x < functions.size(); ++x) {
+						if (functions[x].identifier == caller->getNameAsString()) {
+							functions[i].callers.push_back(functions[x]); // FIXME: Seems to be doubling calls, added removeDuplicates() as quick-fix.
+						}
 					}
 				}
 			}
@@ -135,14 +135,19 @@ void getFunctions(MatcherType matcher) {
     Tool.run(newFrontendActionFactory(&Finder).get());
 }
 
+void removeDuplicates() {
+	for (size_t i = 0; i < functions.size(); i++) {
+		functions[i].callers.resize(functions[i].callers.size()/2);
+	}
+}
+
 void printFunctions() {
 	for (size_t i = 0; i < functions.size(); ++i) {
 		llvm::outs() << "Showing information for function Index " << i << "\n"
 		<< "	Name: " << functions[i].identifier << "\n"
 		<< "	Declaration File: " << functions[i].declFile << "\n";
 		for (size_t x = 0; x < functions[i].callers.size(); ++x) {
-			llvm::outs() << "	Called by function " << functions[i].callers[x][1]
-			<< " in file " << functions[i].callers[x][0] << "\n";
+			llvm::outs() << "	Called by function " << functions[i].callers[x].identifier << "\n";
 		}
 	}
 }
