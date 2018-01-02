@@ -22,6 +22,7 @@
 
 */
 
+#include "StringToArgVC.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
@@ -29,8 +30,6 @@
 #include <cstring>
 #include <vector>
 #include <string>
-
-#include "FAIC.hpp"
 
 /*
  * Usage:

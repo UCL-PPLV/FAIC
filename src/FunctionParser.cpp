@@ -21,7 +21,11 @@
 #include "llvm/Support/CommandLine.h"
 #include "clang/Tooling/Tooling.h"
 #include "clang/AST/DeclBase.h"
-#include "FAIC.hpp"
+#include "FunctionParser.hpp"
+#include "StringToArgVC.hpp"
+#include "EasyLogging++.hpp"
+#include "FSManager.hpp"
+#include <iostream>
 #include <sstream>
 
 using namespace clang::ast_matchers;
@@ -43,16 +47,17 @@ void DeclFilter::run(const MatchFinder::MatchResult &Result) {
             StringRef filename = SManager->getFilename(FullLocation);
             std::string functionName = E->getNameAsString();
             if (isCPPFile(filename)) {
-                if (!E->isOverloadedOperator() && functionName.find("~")) { // Ignore operator overloaders and destructors
+                if (!E->isOverloadedOperator() && functionName.find("~") && functionName != "") { // Ignore operator overloaders and destructors
                     bool functionIsPresent = false;
                     for(std::size_t i = 0; i < functions.size(); ++i) {
-                        if (functions[i].identifier == functionName) {
+                        if (functions[i].name == functionName) {
                             functionIsPresent = true;
                         }
                     }
                     if (!functionIsPresent) {
                         Function newFunc;
-                        newFunc.identifier = functionName;
+                        newFunc.UID = functions.size();
+                        newFunc.name = functionName;
                         newFunc.declFile = filename;
                         functions.push_back(newFunc);
                     }
@@ -74,11 +79,12 @@ void CallFilter::run(const MatchFinder::MatchResult &Result) {
 	if (FullLocation.isValid()) {
 		StringRef filename = SManager->getFilename(FullLocation);
 		std::string functionName = callee->getDirectCallee()->getNameAsString();
-		if (isCPPFile(filename) && !callee->getDirectCallee()->isOverloadedOperator() && functionName.find("~")) {
+		if (isCPPFile(filename) && !callee->getDirectCallee()->isOverloadedOperator()
+        && functionName.find("~") && functionName != "") {
 			for (std::size_t i = 0; i < functions.size(); ++i) {
-				if (functions[i].identifier == functionName) {
+				if (functions[i].name == functionName) {
 					for (size_t x = 0; x < functions.size(); ++x) {
-						if (functions[x].identifier == caller->getNameAsString()) {
+						if (functions[x].name == caller->getNameAsString()) {
 							functions[i].callers.push_back(functions[x]); // FIXME: Seems to be doubling calls, added removeDuplicates() as quick-fix.
 						}
 					}
@@ -99,9 +105,10 @@ void getFunctions(MatcherType matcher) {
     std::stringstream filesStringStream; // Synthesise CLI entry from files vector.
     filesStringStream << "FAIC ";
     for(size_t i = 0; i < files.size(); ++i) {
-        if(i != 0)
-        filesStringStream << " ";
-        filesStringStream << files[i];
+        if(i != 0) {
+            filesStringStream << " ";
+            filesStringStream << files[i];
+        }
     }
     filesStringStream << " --";
     std::string filesString = filesStringStream.str();
@@ -110,7 +117,6 @@ void getFunctions(MatcherType matcher) {
     char ** varFilesArgv;
     stringToArgcArgv(filesString, &filesArgc, &varFilesArgv); // CommonOptionsParser really likes argc/v, so we'll fake it.
     const char ** filesArgv = const_cast<const char**>(varFilesArgv); // Dirty, but does the job.
-
     CommonOptionsParser OptionsParser(filesArgc, filesArgv, FAICCategory); // Setup parser from string to autogenerate CompilationsDatabse
     ClangTool Tool(OptionsParser.getCompilations(), OptionsParser.getSourcePathList());
 
@@ -118,16 +124,14 @@ void getFunctions(MatcherType matcher) {
 
     if (matcher == declarations) {
         DeclFilter Filter;
-        DeclarationMatcher functionMatcher = functionDecl(isDefinition(), unless(isExpansionInSystemHeader())).bind("functionDecls");
+        DeclarationMatcher functionMatcher = functionDecl(isDefinition(),
+            unless(isExpansionInSystemHeader())).bind("functionDecls");
         Finder.addMatcher(functionMatcher, &Filter);
     } else {
         CallFilter Filter;
         StatementMatcher functionMatcher = callExpr(
-            callee(functionDecl()),
-			hasAncestor(functionDecl().bind("functionCallers")),
-            isExpansionInMainFile(),
-			unless(isExpansionInSystemHeader())
-        ).bind("functionCalls");
+            callee(functionDecl()), hasAncestor(functionDecl().bind("functionCallers")),
+            isExpansionInMainFile(), unless(isExpansionInSystemHeader())).bind("functionCalls");
         Finder.addMatcher(functionMatcher, &Filter);
     }
 
@@ -135,7 +139,7 @@ void getFunctions(MatcherType matcher) {
     Tool.run(newFrontendActionFactory(&Finder).get());
 }
 
-void removeDuplicates() {
+void cleanup() {
 	for (size_t i = 0; i < functions.size(); i++) {
 		functions[i].callers.resize(functions[i].callers.size()/2);
 	}
@@ -143,11 +147,13 @@ void removeDuplicates() {
 
 void printFunctions() {
 	for (size_t i = 0; i < functions.size(); ++i) {
-		llvm::outs() << "Showing information for function Index " << i << "\n"
-		<< "	Name: " << functions[i].identifier << "\n"
-		<< "	Declaration File: " << functions[i].declFile << "\n";
+		llvm::outs() << "Showing information for vector index " << i << "\n"
+		<< "    UID: " << functions[i].UID << "\n"
+		<< "    Name: " << functions[i].name << "\n"
+		<< "    Declaration File: " << functions[i].declFile << "\n";
 		for (size_t x = 0; x < functions[i].callers.size(); ++x) {
-			llvm::outs() << "	Called by function " << functions[i].callers[x].identifier << "\n";
+			llvm::outs() << "        Called by function " << functions[i].callers[x].name
+			<< " (" << functions[i].callers[x].UID <<") \n";
 		}
 	}
 }

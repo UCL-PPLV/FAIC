@@ -13,13 +13,29 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "FAIC.hpp"
+#include "FSManager.hpp"
+#include "StringToArgVC.hpp"
+#include "FunctionParser.hpp"
+#include "EasyLogging++.hpp"
 
-int main(int, char const *argv[]) {
+INITIALIZE_EASYLOGGINGPP
+
+void configureLogger() {
+    el::Configurations loggingConfig;
+    loggingConfig.setToDefault();
+    loggingConfig.setGlobally(el::ConfigurationType::Format, "[%level] ==> %msg");
+    loggingConfig.setGlobally(el::ConfigurationType::ToFile, "false");
+    loggingConfig.setGlobally(el::ConfigurationType::PerformanceTracking, "true");
+    el::Loggers::reconfigureAllLoggers(loggingConfig);
+}
+
+int main(int argc, char const *argv[]) {
+    configureLogger();
+    LOG(INFO) << "Logger initialized.";
     int depth = 0;
     getFilesFromPath(argv[1], depth);
     getFunctions(declarations);
     getFunctions(calls);
-	removeDuplicates();
+	cleanup();
 	printFunctions();
 }

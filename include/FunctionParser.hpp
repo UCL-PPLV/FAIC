@@ -1,8 +1,8 @@
 //
-//  FAIC.hpp
+//  FunctionParser.hpp
 //  Function Analysis In Codebases
 //
-//  Created by Tiago Ferreira on 24/07/2017.
+//  Created by Tiago Ferreira on 11/10/2017.
 //  Copyright 2017 Tiago Ferreira
 //
 //  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -13,26 +13,15 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#ifndef FAIC_INCLUDE
-#define FAIC_INCLUDE
+#ifndef FUNCTIONPARSER_INCLUDE
+#define FUNCTIONPARSER_INCLUDE
 
 #include <string>
 #include <vector>
+#include "FSManager.hpp"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
-
-// MARK: Debug
-
-void printFunctions();
-
-// MARK: FSManager
-
-extern std::vector<std::string> files;
-bool isCPPFile(std::string filePath);
-void getFilesFromPath(std::string rootPath, int &depth);
-
-// MARK: FunctionParser
 
 static llvm::cl::OptionCategory FAICCategory("FAIC Options");
 static llvm::cl::extrahelp FAICHelp(clang::tooling::CommonOptionsParser::HelpMessage);
@@ -47,12 +36,14 @@ class CallFilter : public clang::ast_matchers::MatchFinder::MatchCallback {
 };
 
 struct Function {
-	std::string identifier;
+	size_t UID;
+	std::string name;
 	std::string declFile;
 	std::vector<Function> callers;
 
 	bool operator == (const Function& other) const {
-		return std::tie(this->identifier, this->declFile, this->callers) == std::tie(other.identifier, other.declFile, other.callers);
+		return std::tie(this->UID, this->name, this->declFile, this->callers) ==
+		std::tie(other.UID, other.name, other.declFile, other.callers);
 	}
 };
 
@@ -60,15 +51,7 @@ extern std::vector<Function> functions;
 enum MatcherType { declarations, calls };
 
 void getFunctions(MatcherType matcher);
-void removeDuplicates();
-
-// MARK: StringToArgVC
-
-bool _isQuote(char c);
-bool _isEscape(char c);
-bool _isEscape(char c);
-bool _isWhitespace(char c);
-std::vector<std::string> parse(const std::string& args);
-void stringToArgcArgv(const std::string& str, int* argc, char*** argv);
+void cleanup();
+void printFunctions();
 
 #endif

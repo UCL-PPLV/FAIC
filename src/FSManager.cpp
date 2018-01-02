@@ -22,14 +22,15 @@
 #  define BOOST_SYSTEM_NO_DEPRECATED
 #endif
 
-#define warnOnce if (depth == 0) cerr
+#define warnOnce if (depth == 0) LOG(FATAL)
 
 #include <boost/algorithm/string/predicate.hpp>
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
 #include "boost/progress.hpp"
+#include "EasyLogging++.hpp"
+#include "FSManager.hpp"
 #include <iostream>
-#include "FAIC.hpp"
 #include <vector>
 
 using namespace boost;
@@ -41,11 +42,7 @@ vector<string> files;
 bool isCPPFile(string filePath) {
     path p(current_path());
     p = system_complete(filePath);
-    if (p.extension().string() == ".cpp") {
-        return true;
-    } else {
-        return false;
-    }
+    return p.extension().string() == ".cpp";
 }
 
 void getFilesFromPath(string rootPath, int &depth) {
@@ -54,26 +51,22 @@ void getFilesFromPath(string rootPath, int &depth) {
 
     try {
         if (!exists(p)) {
-            warnOnce << "Invalid path: " << p
-            << "\nFile not found, make sure the file or directory exists." << endl;
-        } else {
-            if (!is_directory(p)) {
-                if (isCPPFile(p.filename().string())) {
-                    files.push_back(p.string());
-                } else {
-                    warnOnce << "Invalid path: " << p
-                    << "\nMust be a C++ file (.cpp extensions only)." << endl;
-                }
+            warnOnce << "Invalid path: " << p;
+            warnOnce << "\nFile not found, make sure the file or directory exists." << endl;
+        } else if (!is_directory(p)) {
+            if (isCPPFile(p.filename().string())) {
+                files.push_back(p.string());
             } else {
-                if (boost::filesystem::is_empty(p)) {
-                    warnOnce << "Invalid path: " << p
-                    << "\nThe directory is empty, no files to anaylse." << endl;
-                } else {
-                    for (auto&& file : directory_iterator(p)) {
-                        if (!starts_with(file.path().filename().string(), ".")) {
-                            getFilesFromPath(system_complete(file.path()).string(), ++depth);
-                        }
-                    }
+                warnOnce << "Invalid path: " << p
+                << "\nMust be a C++ file (.cpp extensions only)." << endl;
+            }
+        } else if (boost::filesystem::is_empty(p)) {
+            warnOnce << "Invalid path: " << p
+            << "\nThe directory is empty, no files to anaylse." << endl;
+        } else {
+            for (auto&& file : directory_iterator(p)) {
+                if (!starts_with(file.path().filename().string(), ".")) {
+                    getFilesFromPath(system_complete(file.path()).string(), ++depth);
                 }
             }
         }
