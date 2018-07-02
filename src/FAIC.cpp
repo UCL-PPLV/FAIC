@@ -29,13 +29,13 @@ void configureLogger() {
     el::Loggers::reconfigureAllLoggers(loggingConfig);
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, const char **argv) {
     configureLogger();
     LOG(INFO) << "Logger initialized.";
     int depth = 0;
     getFilesFromPath(argv[1], depth);
     getFunctions(declarations);
     getFunctions(calls);
-	cleanup();
-	printFunctions();
+    cleanup();
+    printFunctions();
 }

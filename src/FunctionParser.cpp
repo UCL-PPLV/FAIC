@@ -31,7 +31,6 @@
 using namespace clang::ast_matchers;
 using namespace clang::tooling;
 using namespace clang;
-using namespace llvm;
 using namespace std;
 
 vector<Function> functions;
@@ -46,21 +45,19 @@ void DeclFilter::run(const MatchFinder::MatchResult &Result) {
         if (FullLocation.isValid()) {
             StringRef filename = SManager->getFilename(FullLocation);
             std::string functionName = E->getNameAsString();
-            if (isCPPFile(filename)) {
-                if (!E->isOverloadedOperator() && functionName.find("~") && functionName != "") { // Ignore operator overloaders and destructors
-                    bool functionIsPresent = false;
-                    for(std::size_t i = 0; i < functions.size(); ++i) {
-                        if (functions[i].name == functionName) {
-                            functionIsPresent = true;
-                        }
+            if (!E->isOverloadedOperator() && functionName.find("~") && functionName != "") { // Ignore operator overloaders and destructors
+                bool functionIsPresent = false;
+                for(std::size_t i = 0; i < functions.size(); ++i) {
+                    if (functions[i].name == functionName) {
+                        functionIsPresent = true;
                     }
-                    if (!functionIsPresent) {
-                        Function newFunc;
-                        newFunc.UID = functions.size();
-                        newFunc.name = functionName;
-                        newFunc.declFile = filename;
-                        functions.push_back(newFunc);
-                    }
+                }
+                if (!functionIsPresent) {
+                    Function newFunc;
+                    newFunc.UID = functions.size();
+                    newFunc.name = functionName;
+                    newFunc.declFile = filename;
+                    functions.push_back(newFunc);
                 }
             }
         }
@@ -68,38 +65,34 @@ void DeclFilter::run(const MatchFinder::MatchResult &Result) {
 }
 
 void CallFilter::run(const MatchFinder::MatchResult &Result) {
-
     ASTContext *Context = Result.Context;
-    SourceManager *SManager = Result.SourceManager;
 
     auto callee = Result.Nodes.getNodeAs<clang::CallExpr>("functionCalls");
-	auto caller = Result.Nodes.getNodeAs<clang::FunctionDecl>("functionCallers");
+    auto caller = Result.Nodes.getNodeAs<clang::FunctionDecl>("functionCallers");
 
-	FullSourceLoc FullLocation = Context->getFullLoc(callee->getLocStart());
-	if (FullLocation.isValid()) {
-		StringRef filename = SManager->getFilename(FullLocation);
-		std::string functionName = callee->getDirectCallee()->getNameAsString();
-		if (isCPPFile(filename) && !callee->getDirectCallee()->isOverloadedOperator()
-        && functionName.find("~") && functionName != "") {
-			for (std::size_t i = 0; i < functions.size(); ++i) {
-				if (functions[i].name == functionName) {
-					for (size_t x = 0; x < functions.size(); ++x) {
-						if (functions[x].name == caller->getNameAsString()) {
-							functions[i].callers.push_back(functions[x]); // FIXME: Seems to be doubling calls, added removeDuplicates() as quick-fix.
-						}
-					}
-				}
-			}
-		}
-	}
+    FullSourceLoc FullLocation = Context->getFullLoc(callee->getLocStart());
+    if (FullLocation.isValid()) {
+        std::string functionName = callee->getDirectCallee()->getNameAsString();
+        if (!callee->getDirectCallee()->isOverloadedOperator() && functionName.find("~") && functionName != "") {
+            for (std::size_t i = 0; i < functions.size(); ++i) {
+                if (functions[i].name == functionName) {
+                    for (size_t x = 0; x < functions.size(); ++x) {
+                        if (functions[x].name == caller->getNameAsString()) {
+                            functions[i].callers.push_back(functions[x]); // FIXME: Seems to be doubling calls, added removeDuplicates() as quick-fix.
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 class : public DiagnosticConsumer {
-public:
-    virtual bool IncludeInDiagnosticCounts() const {
-        return false; // Enough of that "not-so-fatal" error garbage.
-    }
-} diagConsumer;
+            public:
+                virtual bool IncludeInDiagnosticCounts() const {
+                    return false; // Enough of that "not-so-fatal" error garbage.
+                }
+        } diagConsumer;
 
 void getFunctions(MatcherType matcher) {
     std::stringstream filesStringStream; // Synthesise CLI entry from files vector.
@@ -125,13 +118,13 @@ void getFunctions(MatcherType matcher) {
     if (matcher == declarations) {
         DeclFilter Filter;
         DeclarationMatcher functionMatcher = functionDecl(isDefinition(),
-            unless(isExpansionInSystemHeader())).bind("functionDecls");
+                unless(isExpansionInSystemHeader())).bind("functionDecls");
         Finder.addMatcher(functionMatcher, &Filter);
     } else {
         CallFilter Filter;
         StatementMatcher functionMatcher = callExpr(
-            callee(functionDecl()), hasAncestor(functionDecl().bind("functionCallers")),
-            isExpansionInMainFile(), unless(isExpansionInSystemHeader())).bind("functionCalls");
+                callee(functionDecl()), hasAncestor(functionDecl().bind("functionCallers")),
+                isExpansionInMainFile(), unless(isExpansionInSystemHeader())).bind("functionCalls");
         Finder.addMatcher(functionMatcher, &Filter);
     }
 
@@ -140,20 +133,20 @@ void getFunctions(MatcherType matcher) {
 }
 
 void cleanup() {
-	for (size_t i = 0; i < functions.size(); i++) {
-		functions[i].callers.resize(functions[i].callers.size()/2);
-	}
+    for (size_t i = 0; i < functions.size(); i++) {
+        functions[i].callers.resize(functions[i].callers.size()/2);
+    }
 }
 
 void printFunctions() {
-	for (size_t i = 0; i < functions.size(); ++i) {
-		llvm::outs() << "Showing information for vector index " << i << "\n"
-		<< "    UID: " << functions[i].UID << "\n"
-		<< "    Name: " << functions[i].name << "\n"
-		<< "    Declaration File: " << functions[i].declFile << "\n";
-		for (size_t x = 0; x < functions[i].callers.size(); ++x) {
-			llvm::outs() << "        Called by function " << functions[i].callers[x].name
-			<< " (" << functions[i].callers[x].UID <<") \n";
-		}
-	}
+    for (size_t i = 0; i < functions.size(); ++i) {
+        llvm::outs() << "Showing information for vector index " << i << "\n"
+            << "    UID: " << functions[i].UID << "\n"
+            << "    Name: " << functions[i].name << "\n"
+            << "    Declaration File: " << functions[i].declFile << "\n";
+        for (size_t x = 0; x < functions[i].callers.size(); ++x) {
+            llvm::outs() << "        Called by function " << functions[i].callers[x].name
+                << " (" << functions[i].callers[x].UID <<") \n";
+        }
+    }
 }

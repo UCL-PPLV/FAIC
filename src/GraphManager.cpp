@@ -28,11 +28,11 @@ using namespace boost;
 Graph callGraph;
 
 void createGraph() {
-	for (size_t i = 0; i < functions.size(); ++i) {
-		for (size_t x = 0; x < functions[i].callers.size(); ++x) {
-			add_edge(functions[i].callers[x].UID, functions[i].UID, callGraph);
-		}
-	}
+    for (size_t i = 0; i < functions.size(); ++i) {
+        for (size_t x = 0; x < functions[i].callers.size(); ++x) {
+            add_edge(functions[i].callers[x].UID, functions[i].UID, callGraph);
+        }
+    }
 }
 
 void populateGraph() {
@@ -40,5 +40,5 @@ void populateGraph() {
 }
 
 void printGraph() {
-	boost::write_graphviz(std::cout, callGraph);
+    boost::write_graphviz(std::cout, callGraph);
 }

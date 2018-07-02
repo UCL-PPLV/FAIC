@@ -16,12 +16,13 @@
 #ifndef FSMANAGER_INCLUDE
 #define FSMANAGER_INCLUDE
 
+#include "boost/filesystem.hpp"
 #include <string>
 #include <vector>
 
 extern std::vector<std::string> files;
 
-bool isCPPFile(std::string filePath);
+bool isCPPFile(boost::filesystem::path &filePath);
 void getFilesFromPath(std::string rootPath, int &depth);
 
 #endif
