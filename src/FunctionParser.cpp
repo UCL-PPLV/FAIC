@@ -98,10 +98,8 @@ void getFunctions(MatcherType matcher) {
     std::stringstream filesStringStream; // Synthesise CLI entry from files vector.
     filesStringStream << "FAIC ";
     for(size_t i = 0; i < files.size(); ++i) {
-        if(i != 0) {
-            filesStringStream << " ";
-            filesStringStream << files[i];
-        }
+        filesStringStream << " ";
+        filesStringStream << files[i];
     }
     filesStringStream << " --";
     std::string filesString = filesStringStream.str();
