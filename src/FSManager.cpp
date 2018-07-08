@@ -26,18 +26,16 @@
 using namespace boost::filesystem;
 using namespace std;
 
-vector<string> files;
-
-bool isCPPFile(path &filePath) {
+bool isCPPFile(path filePath) {
     return strcmp(filePath.extension().c_str(), ".cpp") == 0;
 }
 
-void getFilesFromPath(string rootPath, int &depth) {
+void getFilesFromPathRecursive(vector<string> &files, string rootPath, int &depth) {
     path p(current_path());
     p = system_complete(rootPath);
 
     try {
-        if (exists(p)) { // FIXME: Seems to be returning nil.
+        if (exists(p)) {
             if (!is_directory(p)) {
                 if (isCPPFile(p)) {
                     files.push_back(p.string());
@@ -51,12 +49,19 @@ void getFilesFromPath(string rootPath, int &depth) {
             } else {
                 for (auto&& file : directory_iterator(p)) {
                     if (!boost::starts_with(file.path().filename().string(), ".")) {
-                        getFilesFromPath(system_complete(file.path()).string(), ++depth);
+                        getFilesFromPathRecursive(files, system_complete(file.path()).string(), ++depth);
                     }
                 }
             }
         }
     } catch (const filesystem_error& ex) {
-            cerr << ex.what() << endl;
+            LOG(FATAL) << ex.what();
     }
+}
+
+vector<string> filesFromPath(string rootPath) {
+    int depth = 0;
+    vector<string> files;
+    getFilesFromPathRecursive(files, rootPath, depth);
+    return files;
 }

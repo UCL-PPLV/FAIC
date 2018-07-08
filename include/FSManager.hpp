@@ -20,9 +20,7 @@
 #include <string>
 #include <vector>
 
-extern std::vector<std::string> files;
-
-bool isCPPFile(boost::filesystem::path &filePath);
-void getFilesFromPath(std::string rootPath, int &depth);
+bool isCPPFile(boost::filesystem::path filePath);
+std::vector<std::string> filesFromPath(std::string rootPath);
 
 #endif

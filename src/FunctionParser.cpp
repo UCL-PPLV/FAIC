@@ -45,7 +45,7 @@ void DeclFilter::run(const MatchFinder::MatchResult &Result) {
         if (FullLocation.isValid()) {
             StringRef filename = SManager->getFilename(FullLocation);
             std::string functionName = E->getNameAsString();
-            if (!E->isOverloadedOperator() && functionName.find("~") && functionName != "") { // Ignore operator overloaders and destructors
+            if (E->hasBody() && !E->isOverloadedOperator() && functionName.find("~") && functionName != "") { // Ignore operator overloaders and destructors
                 bool functionIsPresent = false;
                 for(std::size_t i = 0; i < functions.size(); ++i) {
                     if (functions[i].name == functionName) {
@@ -88,13 +88,13 @@ void CallFilter::run(const MatchFinder::MatchResult &Result) {
 }
 
 class : public DiagnosticConsumer {
-            public:
-                virtual bool IncludeInDiagnosticCounts() const {
-                    return false; // Enough of that "not-so-fatal" error garbage.
-                }
-        } diagConsumer;
+    public:
+        virtual bool IncludeInDiagnosticCounts() const {
+            return false; // Enough of that "not-so-fatal" error garbage.
+        }
+} diagConsumer;
 
-void getFunctions(MatcherType matcher) {
+CommonOptionsParser filesToOptionsParser(vector<string> files) {
     std::stringstream filesStringStream; // Synthesise CLI entry from files vector.
     filesStringStream << "FAIC ";
     for(size_t i = 0; i < files.size(); ++i) {
@@ -102,13 +102,18 @@ void getFunctions(MatcherType matcher) {
         filesStringStream << files[i];
     }
     filesStringStream << " --";
-    std::string filesString = filesStringStream.str();
-
+    
     int filesArgc;
     char ** varFilesArgv;
-    stringToArgcArgv(filesString, &filesArgc, &varFilesArgv); // CommonOptionsParser really likes argc/v, so we'll fake it.
-    const char ** filesArgv = const_cast<const char**>(varFilesArgv); // Dirty, but does the job.
-    CommonOptionsParser OptionsParser(filesArgc, filesArgv, FAICCategory); // Setup parser from string to autogenerate CompilationsDatabse
+    
+    stringToArgcArgv(filesStringStream.str(), &filesArgc, &varFilesArgv);
+    const char ** filesArgv = const_cast<const char**>(varFilesArgv);
+    CommonOptionsParser OptionsParser(filesArgc, filesArgv, FAICCategory);
+    return OptionsParser;
+}
+
+void getFunctions(vector<string> files, MatcherType matcher) {
+    CommonOptionsParser OptionsParser = filesToOptionsParser(files);
     ClangTool Tool(OptionsParser.getCompilations(), OptionsParser.getSourcePathList());
 
     MatchFinder Finder;
@@ -138,10 +143,10 @@ void cleanup() {
 
 void printFunctions() {
     for (size_t i = 0; i < functions.size(); ++i) {
-        llvm::outs() << "Showing information for vector index " << i << "\n"
+        LOG(DEBUG) << "SHOWING INFO FROM VECTOR INDEX " << i << "\n"
             << "    UID: " << functions[i].UID << "\n"
             << "    Name: " << functions[i].name << "\n"
-            << "    Declaration File: " << functions[i].declFile << "\n";
+            << "    Declaration File: " << functions[i].declFile;
         for (size_t x = 0; x < functions[i].callers.size(); ++x) {
             llvm::outs() << "        Called by function " << functions[i].callers[x].name
                 << " (" << functions[i].callers[x].UID <<") \n";

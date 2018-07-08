@@ -16,12 +16,12 @@
 #ifndef FUNCTIONPARSER_INCLUDE
 #define FUNCTIONPARSER_INCLUDE
 
-#include <string>
-#include <vector>
-#include "FSManager.hpp"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
+#include "FSManager.hpp"
+#include <string>
+#include <vector>
 
 static llvm::cl::OptionCategory FAICCategory("FAIC Options");
 static llvm::cl::extrahelp FAICHelp(clang::tooling::CommonOptionsParser::HelpMessage);
@@ -50,7 +50,8 @@ struct Function {
 extern std::vector<Function> functions;
 enum MatcherType { declarations, calls };
 
-void getFunctions(MatcherType matcher);
+clang::tooling::CommonOptionsParser filesToOptionsParser(std::vector<std::string> files);
+void getFunctions(std::vector<std::string> files, MatcherType matcher);
 void cleanup();
 void printFunctions();
 

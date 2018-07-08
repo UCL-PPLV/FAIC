@@ -13,29 +13,33 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "FSManager.hpp"
-#include "StringToArgVC.hpp"
 #include "FunctionParser.hpp"
 #include "EasyLogging++.hpp"
+#include "GraphManager.hpp"
+#include "FSManager.hpp"
+#include <vector>
+#include <string>
 
+#define ELPP_FEATURE_PERFORMANCE_TRACKING
 INITIALIZE_EASYLOGGINGPP
+
+using namespace std;
 
 void configureLogger() {
     el::Configurations loggingConfig;
     loggingConfig.setToDefault();
     loggingConfig.setGlobally(el::ConfigurationType::Format, "[%level] ==> %msg");
     loggingConfig.setGlobally(el::ConfigurationType::ToFile, "false");
-    loggingConfig.setGlobally(el::ConfigurationType::PerformanceTracking, "true");
     el::Loggers::reconfigureAllLoggers(loggingConfig);
 }
 
 int main(int argc, const char **argv) {
     configureLogger();
-    LOG(INFO) << "Logger initialized.";
-    int depth = 0;
-    getFilesFromPath(argv[1], depth);
-    getFunctions(declarations);
-    getFunctions(calls);
+    vector<string> files = filesFromPath(argv[1]);
+    getFunctions(files, declarations);
+    getFunctions(files, calls);
     cleanup();
     printFunctions();
+    createGraph();
+    printGraph();
 }
