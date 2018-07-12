@@ -1,9 +1,9 @@
 //
-//  FAIC.cpp
+//  FSManager.cpp
 //  Function Analysis In Codebases
 //
-//  Created by Tiago Ferreira on 12/07/2017.
-//  Copyright 2017 Tiago Ferreira
+//  Created by Tiago Ferreira on 09/07/2018.
+//  Copyright 2018 Tiago Ferreira
 //
 //  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 //  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -13,20 +13,16 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "FunctionParser.hpp"
-#include "GraphManager.hpp"
+#include "boost/filesystem.hpp"
 #include "FSManager.hpp"
-#include <vector>
-#include <string>
+#include "gtest/gtest.h"
 
-using namespace std;
+using namespace boost::filesystem;
 
-int main(int argc, const char **argv) {
-    vector<string> files = filesFromPath(argv[1]);
-    getFunctions(files, declarations);
-    getFunctions(files, calls);
-    cleanup();
-    printFunctions();
-    createGraph();
-    printGraph();
+TEST(FSManager, isCPPFile) {
+    EXPECT_TRUE(isCPPFile(system_complete("test.cpp")));
+    EXPECT_TRUE(isCPPFile(system_complete("./this/etcEtc.cpp")));
+    EXPECT_FALSE(isCPPFile(system_complete("notACPPFile.txt")));
+    EXPECT_FALSE(isCPPFile(system_complete("noExtension")));
+    EXPECT_FALSE(isCPPFile(system_complete("/thisIsJustAFolder/")));
 }

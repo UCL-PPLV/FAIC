@@ -13,24 +13,29 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#define warnOnce if (depth == 0) LOG(FATAL)
+#define warnOnce if (depth == 0) llvm::outs()
 
 #include <boost/algorithm/string/predicate.hpp>
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/Frontend/FrontendAction.h"
+#include "llvm/Support/CommandLine.h"
+#include "clang/Tooling/Tooling.h"
+#include "clang/AST/ASTConsumer.h"
 #include "boost/filesystem.hpp"
-#include "EasyLogging++.hpp"
 #include "FSManager.hpp"
 #include <string.h>
-#include <iostream>
 #include <vector>
 
 using namespace boost::filesystem;
+using namespace clang;
 using namespace std;
 
 bool isCPPFile(path filePath) {
     return strcmp(filePath.extension().c_str(), ".cpp") == 0;
 }
 
-void getFilesFromPathRecursive(vector<string> &files, string rootPath, int &depth) {
+void getFilesFromPathRecursive(vector<string>& files, string rootPath, int& depth) {
     path p(current_path());
     p = system_complete(rootPath);
 
@@ -40,12 +45,12 @@ void getFilesFromPathRecursive(vector<string> &files, string rootPath, int &dept
                 if (isCPPFile(p)) {
                     files.push_back(p.string());
                 } else {
-                    warnOnce << "Invalid path: " << p
-                    << "\nMust be a C++ file (.cpp extensions only)." << endl;
+                    warnOnce << "Invalid path: " << p.string()
+                    << "\nMust be a C++ file (.cpp extensions only). \n";
                 }
             } else if (boost::filesystem::is_empty(p)) {
-                warnOnce << "Invalid path: " << p
-                << "\nThe directory is empty, no files to anaylse." << endl;
+                warnOnce << "Invalid path: " << p.string()
+                << "\nThe directory is empty, no files to anaylse. \n";
             } else {
                 for (auto&& file : directory_iterator(p)) {
                     if (!boost::starts_with(file.path().filename().string(), ".")) {
@@ -55,7 +60,7 @@ void getFilesFromPathRecursive(vector<string> &files, string rootPath, int &dept
             }
         }
     } catch (const filesystem_error& ex) {
-            LOG(FATAL) << ex.what();
+        llvm::outs() << ex.what() << "\n";
     }
 }
 

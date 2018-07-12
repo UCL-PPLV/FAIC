@@ -23,9 +23,7 @@
 #include "clang/AST/DeclBase.h"
 #include "FunctionParser.hpp"
 #include "StringToArgVC.hpp"
-#include "EasyLogging++.hpp"
 #include "FSManager.hpp"
-#include <iostream>
 #include <sstream>
 
 using namespace clang::ast_matchers;
@@ -143,10 +141,10 @@ void cleanup() {
 
 void printFunctions() {
     for (size_t i = 0; i < functions.size(); ++i) {
-        LOG(DEBUG) << "SHOWING INFO FROM VECTOR INDEX " << i << "\n"
+        llvm::outs() << "SHOWING INFO FROM VECTOR INDEX " << i << "\n"
             << "    UID: " << functions[i].UID << "\n"
             << "    Name: " << functions[i].name << "\n"
-            << "    Declaration File: " << functions[i].declFile;
+            << "    Declaration File: " << functions[i].declFile << "\n";
         for (size_t x = 0; x < functions[i].callers.size(); ++x) {
             llvm::outs() << "        Called by function " << functions[i].callers[x].name
                 << " (" << functions[i].callers[x].UID <<") \n";

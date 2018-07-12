@@ -13,8 +13,24 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "clang/ASTMatchers/ASTMatchers.h"
+#include "clang/Tooling/Tooling.h"
 #include "gtest/gtest.h"
 
-TEST(Tooling, Clang) {
-    
+using namespace llvm;
+using namespace clang;
+using namespace clang::tooling;
+using namespace clang::ast_matchers;
+
+class DumpCallback : public MatchFinder::MatchCallback {
+    virtual void run(const MatchFinder::MatchResult &Result) { }
+};
+
+TEST(Dependencies, ClangAST) {
+    DumpCallback Callback;
+    MatchFinder Finder;
+    Finder.addMatcher(recordDecl().bind("x"), &Callback);
+    std::unique_ptr<FrontendActionFactory> Factory(newFrontendActionFactory(&Finder));
+    EXPECT_TRUE(clang::tooling::runToolOnCode(Factory->create(), "class X {};"));
 }
